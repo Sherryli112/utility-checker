@@ -34,3 +34,16 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           CHECK_DAYS:         ${{ vars.CHECK_DAYS }}
         run: python -u check_outage.py
+
+  # GitHub 會在公開 repo 60 天無活動後自動停用排程；
+  # 每次執行時透過 API 重新 enable 本 workflow，重置計時，避免被停用。
+  # 獨立成一個 job，查詢失敗也不影響續命。
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable workflow to reset inactivity timer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/check_outage.yml/enable"
